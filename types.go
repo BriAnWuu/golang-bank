@@ -3,7 +3,14 @@ package main
 import (
 	"math/rand"
 	"time"
+
+	jwt "github.com/golang-jwt/jwt/v5"
 )
+
+type BankJWTClaims struct {
+	AccountNumber int64 `json:"accountNumber"`
+	jwt.RegisteredClaims
+}
 
 type TransferRequest struct {
 	ToAccount int `json:"toAccount"`
