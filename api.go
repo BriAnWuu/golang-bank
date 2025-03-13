@@ -182,7 +182,7 @@ func createJWT(account *Account) (string, error) {
 	claims := BankJWTClaims{
 		account.AccountNumber,
 		jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(5 * time.Minute)),
 		},
 	}
 
