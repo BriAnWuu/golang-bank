@@ -8,4 +8,3 @@
 | /account | ✅ | ✅ | ❌ | ❌ |
 | /account/**{id}** | ✅ | ❌ | ❌ | ✅ |
 | /transfer | ❌ | ✅ | ❌ | ❌ |
-

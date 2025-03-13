@@ -4,5 +4,8 @@ build:
 run: build
 	@./bin/golang-bank
 
+run-seed: build
+	@./bin/golang-bank --seed
+
 test:
 	@go test -v ./...
