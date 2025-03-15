@@ -24,7 +24,6 @@ type BankJWTClaims struct {
 }
 
 type TransferRequest struct {
-	FromAccountId   int   `json:"fromAccountId"`
 	ToAccountNumber int64 `json:"toAccountNumber"`
 	Amount          int64 `json:"amount"`
 }

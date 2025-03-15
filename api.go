@@ -31,7 +31,7 @@ func (s *ApiServer) Run() {
 	router.HandleFunc("/login", makeHttpHandleFunc(s.handleLogin))
 	router.HandleFunc("/account", makeHttpHandleFunc(s.handleAccount))
 	router.HandleFunc("/account/{id}", withJWTAuth(makeHttpHandleFunc(s.handleAccountById), s.store))
-	router.HandleFunc("/transfer", makeHttpHandleFunc(s.handleTransfer))
+	router.HandleFunc("/account/{id}/transfer", withJWTAuth(makeHttpHandleFunc(s.handleTransfer), s.store))
 
 	log.Println("API server running on port", s.listenAddress)
 
@@ -164,12 +164,16 @@ func (s *ApiServer) handleTransfer(w http.ResponseWriter, r *http.Request) error
 	defer r.Body.Close()
 
 	// body field validation
-	if req.FromAccountId == 0 || req.ToAccountNumber == 0 || req.Amount <= 0 {
+	if req.ToAccountNumber == 0 || req.Amount <= 0 {
 		return fmt.Errorf("bad request body")
 	}
 
 	// check fromAccount exists
-	fromAccount, err := s.store.GetAccountById(req.FromAccountId)
+	fromAccountId, err := getId(r)
+	if err != nil {
+		return err
+	}
+	fromAccount, err := s.store.GetAccountById(fromAccountId)
 	if err != nil {
 		return err
 	}
@@ -186,9 +190,9 @@ func (s *ApiServer) handleTransfer(w http.ResponseWriter, r *http.Request) error
 
 	// initiate transaction
 	if err := s.store.TransferAccountBalance(
-		req.FromAccountId,
-		req.ToAccountNumber,
-		req.Amount,
+		fromAccountId,
+		int(req.ToAccountNumber),
+		int(req.Amount),
 	); err != nil {
 		return err
 	}
@@ -206,10 +210,6 @@ func WriteJson(w http.ResponseWriter, status int, v any) error {
 	return json.NewEncoder(w).Encode(v)
 }
 
-func permissionDenied(w http.ResponseWriter) {
-	WriteJson(w, http.StatusForbidden, ApiError{Error: "permission denied"})
-}
-
 func createJWT(account *Account) (string, error) {
 	// Create the Claims
 	claims := BankJWTClaims{
@@ -222,6 +222,24 @@ func createJWT(account *Account) (string, error) {
 	secret := os.Getenv("JWT_SECRET")
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(secret))
+}
+
+func validateJWT(tokenString string) (*jwt.Token, error) {
+	secret := os.Getenv("JWT_SECRET")
+
+	return jwt.ParseWithClaims(tokenString, &BankJWTClaims{}, func(token *jwt.Token) (interface{}, error) {
+		// Don't forget to validate the alg is what you expect:
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+
+		// hmacSampleSecret is a []byte containing your secret, e.g. []byte("my_secret_key")
+		return []byte(secret), nil
+	})
+}
+
+func permissionDenied(w http.ResponseWriter) {
+	WriteJson(w, http.StatusForbidden, ApiError{Error: "permission denied"})
 }
 
 func withJWTAuth(handlerFunc http.HandlerFunc, s Storage) http.HandlerFunc {
@@ -264,20 +282,6 @@ func withJWTAuth(handlerFunc http.HandlerFunc, s Storage) http.HandlerFunc {
 
 		handlerFunc(w, r)
 	}
-}
-
-func validateJWT(tokenString string) (*jwt.Token, error) {
-	secret := os.Getenv("JWT_SECRET")
-
-	return jwt.ParseWithClaims(tokenString, &BankJWTClaims{}, func(token *jwt.Token) (interface{}, error) {
-		// Don't forget to validate the alg is what you expect:
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-
-		// hmacSampleSecret is a []byte containing your secret, e.g. []byte("my_secret_key")
-		return []byte(secret), nil
-	})
 }
 
 type ApiFunc func(http.ResponseWriter, *http.Request) error

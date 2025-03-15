@@ -11,11 +11,11 @@ type Storage interface {
 	CreateAccount(*Account) error
 	DeleteAccount(int) error
 	UpdateAccount(*Account) error
-	// UpdateAccountBalance(int, int64) (*Account, error)
+	// UpdateAccountBalance(int, int) (*Account, error)
 	GetAccounts() ([]*Account, error)
 	GetAccountById(int) (*Account, error)
 	GetAccountByAccountNumber(int) (*Account, error)
-	TransferAccountBalance(int, int64, int64) error
+	TransferAccountBalance(int, int, int) error
 }
 
 type PostgresStore struct {
@@ -135,7 +135,7 @@ func (s *PostgresStore) GetAccountByAccountNumber(accNum int) (*Account, error) 
 	return nil, fmt.Errorf("account number [%d] not found", accNum)
 }
 
-func (s *PostgresStore) TransferAccountBalance(fromAccountId int, toAccountNum int64, amount int64) error {
+func (s *PostgresStore) TransferAccountBalance(fromAccountId, toAccountNum, amount int) error {
 	// start transaction
 	tx, err := s.db.Begin()
 	if err != nil {
