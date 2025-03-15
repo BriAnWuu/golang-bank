@@ -7,4 +7,4 @@
 | /login | ❌ | ✅ | ❌ | ❌ |
 | /account | ✅ | ✅ | ❌ | ❌ |
 | /account/**{id}** | ✅ | ❌ | ❌ | ✅ |
-| /transfer | ❌ | ✅ | ✅ | ❌ |
+| /account/**{id}**/transfer | ❌ | ✅ | ✅ | ❌ |
