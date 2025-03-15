@@ -11,9 +11,11 @@ type Storage interface {
 	CreateAccount(*Account) error
 	DeleteAccount(int) error
 	UpdateAccount(*Account) error
+	// UpdateAccountBalance(int, int64) (*Account, error)
 	GetAccounts() ([]*Account, error)
 	GetAccountById(int) (*Account, error)
 	GetAccountByAccountNumber(int) (*Account, error)
+	TransferAccountBalance(int, int64, int64) error
 }
 
 type PostgresStore struct {
@@ -131,6 +133,44 @@ func (s *PostgresStore) GetAccountByAccountNumber(accNum int) (*Account, error) 
 	}
 
 	return nil, fmt.Errorf("account number [%d] not found", accNum)
+}
+
+func (s *PostgresStore) TransferAccountBalance(fromAccountId int, toAccountNum int64, amount int64) error {
+	// start transaction
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(`
+		UPDATE account 
+		SET balance = balance - $1 
+		WHERE id = $2
+		AND balance >= $1`, amount, fromAccountId)
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to deduct funds: %v", err)
+	}
+
+	result, err := tx.Exec(`
+		UPDATE account 
+		SET balance = balance + $1 
+		WHERE account_number = $2`, amount, toAccountNum)
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to add funds: %v", err)
+	}
+	rowsAffected, _ := result.RowsAffected()
+	if rowsAffected == 0 {
+		tx.Rollback()
+		return fmt.Errorf("account number [%d] not found", toAccountNum)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %v", err)
+	}
+
+	return nil
 }
 
 // helper funcs

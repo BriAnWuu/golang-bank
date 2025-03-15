@@ -124,7 +124,7 @@ func (s *ApiServer) handleCreateAccount(w http.ResponseWriter, r *http.Request) 
 		return err
 	}
 
-	account, err := NewAccount(req.FirstName, req.LastName, req.Password)
+	account, err := NewAccount(req.FirstName, req.LastName, req.Password, req.Deposit)
 	if err != nil {
 		return err
 	}
@@ -157,13 +157,46 @@ func (s *ApiServer) handleDeleteAccount(w http.ResponseWriter, r *http.Request) 
 }
 
 func (s *ApiServer) handleTransfer(w http.ResponseWriter, r *http.Request) error {
-	transferReq := new(TransferRequest)
-	if err := json.NewDecoder(r.Body).Decode(transferReq); err != nil {
+	req := new(TransferRequest)
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
 		return err
 	}
 	defer r.Body.Close()
 
-	return WriteJson(w, http.StatusOK, transferReq)
+	// body field validation
+	if req.FromAccountId == 0 || req.ToAccountNumber == 0 || req.Amount <= 0 {
+		return fmt.Errorf("bad request body")
+	}
+
+	// check fromAccount exists
+	fromAccount, err := s.store.GetAccountById(req.FromAccountId)
+	if err != nil {
+		return err
+	}
+
+	// check sufficient fund
+	if fromAccount.Balance < req.Amount {
+		return fmt.Errorf("insufficient funds")
+	}
+
+	// block transfer to self
+	if fromAccount.AccountNumber == req.ToAccountNumber {
+		return fmt.Errorf("invalid account number")
+	}
+
+	// initiate transaction
+	if err := s.store.TransferAccountBalance(
+		req.FromAccountId,
+		req.ToAccountNumber,
+		req.Amount,
+	); err != nil {
+		return err
+	}
+
+	// update balance
+	fromAccount.Balance = fromAccount.Balance - req.Amount
+
+	return WriteJson(w, http.StatusOK, fromAccount)
 }
 
 // helper funcs

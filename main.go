@@ -6,8 +6,8 @@ import (
 	"log"
 )
 
-func seedAccount(store Storage, fname, lname, pw string) *Account {
-	acc, err := NewAccount(fname, lname, pw)
+func seedAccount(store Storage, fname, lname, pw string, deposit int64) *Account {
+	acc, err := NewAccount(fname, lname, pw, deposit)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -22,7 +22,7 @@ func seedAccount(store Storage, fname, lname, pw string) *Account {
 }
 
 func seedAccounts(s Storage) {
-	seedAccount(s, "Henry", "Cavil", "1233")
+	seedAccount(s, "Henry", "Cavil", "1233", 1_000)
 }
 
 func main() {

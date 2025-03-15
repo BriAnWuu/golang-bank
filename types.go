@@ -24,14 +24,16 @@ type BankJWTClaims struct {
 }
 
 type TransferRequest struct {
-	ToAccount int `json:"toAccount"`
-	Amount    int `json:"amount"`
+	FromAccountId   int   `json:"fromAccountId"`
+	ToAccountNumber int64 `json:"toAccountNumber"`
+	Amount          int64 `json:"amount"`
 }
 
 type CreateAccountRequest struct {
 	FirstName string `json:"firstName"`
 	LastName  string `json:"lastName"`
 	Password  string `json:"password"`
+	Deposit   int64  `json:"deposit"`
 }
 
 type Account struct {
@@ -48,7 +50,7 @@ func (acc *Account) ValidatePassword(pw string) bool {
 	return bcrypt.CompareHashAndPassword([]byte(acc.EncryptedPassword), []byte(pw)) == nil
 }
 
-func NewAccount(firstName, lastName, password string) (*Account, error) {
+func NewAccount(firstName, lastName, password string, deposit int64) (*Account, error) {
 	encpw, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, err
@@ -59,6 +61,7 @@ func NewAccount(firstName, lastName, password string) (*Account, error) {
 		LastName:          lastName,
 		AccountNumber:     int64(rand.Intn(1_000_000)),
 		EncryptedPassword: string(encpw),
+		Balance:           deposit,
 		CreatedAt:         time.Now().UTC(),
 	}, nil
 }
