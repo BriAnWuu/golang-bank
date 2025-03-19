@@ -40,10 +40,10 @@ func (s *ApiServer) Run() {
 
 // handle routes
 func (s *ApiServer) handleAccount(w http.ResponseWriter, r *http.Request) error {
-	if r.Method == "GET" {
+	if r.Method == http.MethodGet {
 		return s.handleGetAccount(w, r)
 	}
-	if r.Method == "POST" {
+	if r.Method == http.MethodPost {
 		return s.handleCreateAccount(w, r)
 	}
 
@@ -51,19 +51,19 @@ func (s *ApiServer) handleAccount(w http.ResponseWriter, r *http.Request) error 
 }
 
 func (s *ApiServer) handleAccountById(w http.ResponseWriter, r *http.Request) error {
-	if r.Method == "GET" {
+	if r.Method == http.MethodGet {
 		return s.handleGetAccountById(w, r)
 	}
-	if r.Method == "DELETE" {
+	if r.Method == http.MethodDelete {
 		return s.handleDeleteAccount(w, r)
 	}
 
 	return fmt.Errorf("method not allowed %s", r.Method)
 }
 
-// handle methods
+// handle funcs
 func (s *ApiServer) handleLogin(w http.ResponseWriter, r *http.Request) error {
-	if r.Method != "POST" {
+	if r.Method != http.MethodPost {
 		return fmt.Errorf("method not allowed %s", r.Method)
 	}
 
@@ -119,8 +119,8 @@ func (s *ApiServer) handleGetAccountById(w http.ResponseWriter, r *http.Request)
 }
 
 func (s *ApiServer) handleCreateAccount(w http.ResponseWriter, r *http.Request) error {
-	req := new(CreateAccountRequest)
-	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+	var req CreateAccountRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return err
 	}
 
@@ -157,8 +157,12 @@ func (s *ApiServer) handleDeleteAccount(w http.ResponseWriter, r *http.Request) 
 }
 
 func (s *ApiServer) handleTransfer(w http.ResponseWriter, r *http.Request) error {
-	req := new(TransferRequest)
-	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+	if r.Method != http.MethodPost {
+		return fmt.Errorf("method not allowed %s", r.Method)
+	}
+
+	var req TransferRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return err
 	}
 	defer r.Body.Close()

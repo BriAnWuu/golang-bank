@@ -17,4 +17,4 @@ $ docker run --name <CONTAINER_NAME> -e POSTGRES_PASSWORD=<ENV_PASSWORD> -p 5432
 
 ```
 
-Use `$ Docker ps` to show running containers
+Use `$ docker ps` to show running containers
